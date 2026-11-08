@@ -159,13 +159,13 @@
 
         <!-- VUE 2 : RESPONSABLE -->
         <div id="view-manager" class="hidden space-y-6">
-            <!-- Écran PIN -->
+            <!-- Écran PIN (Mentions superflues retirées) -->
             <div id="manager-lock-screen" class="max-w-md mx-auto my-12 bg-white p-8 rounded-2xl shadow-xl border border-slate-200 text-center">
                 <div class="w-16 h-16 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">
                     <i class="ph-bold ph-lock-key"></i>
                 </div>
                 <h2 class="text-xl font-extrabold text-slate-900">Espace Responsable</h2>
-                <p class="text-xs text-slate-500 mt-1 mb-6">Code PIN requis (2256)</p>
+                <p class="text-xs text-slate-500 mt-1 mb-6">Zone réservée à l'administration</p>
                 <div class="my-6">
                     <input type="password" id="manager-pin-input" maxlength="4" placeholder="••••" class="w-40 text-center text-2xl font-bold py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none tracking-widest">
                 </div>
@@ -525,7 +525,6 @@
                 timestamp: Date.now()
             };
 
-            // Sauvegarde immédiate
             set(ref(db, 'orders/' + newOrderId), newOrder);
 
             const textMessage = `[Inguiclean] Nouvelle Commande\nAgent: ${agent}\nZone: ${location}\nPriorite: ${priority}\nProduits:\n${itemsSummary}\nRemarque: ${comment || 'Aucune'}`;
@@ -586,17 +585,14 @@
                 sector: sectorInput?.value.trim() || "Général"
             };
 
-            // Mettre à jour l'état local immédiatement
             window.agents.push(newAgent);
             localStorage.setItem('inguiclean_agents', JSON.stringify(window.agents));
             initAgentsSelect();
             renderManagerManagementLists();
 
-            // Vider les champs
             nameInput.value = "";
             if(sectorInput) sectorInput.value = "";
 
-            // Envoyer à Firebase en arrière-plan
             set(ref(db, 'agents/' + newAgentId), {
                 name: newAgent.name,
                 sector: newAgent.sector
@@ -629,17 +625,14 @@
                 icon: category === 'Poubelle' ? 'ph-trash' : (category === 'EPI' ? 'ph-hand' : 'ph-package')
             };
 
-            // Mettre à jour l'état local immédiatement
             window.catalog.push(newProd);
             localStorage.setItem('inguiclean_catalog', JSON.stringify(window.catalog));
             renderCatalog();
             renderManagerManagementLists();
 
-            // Vider les champs
             nameInput.value = "";
             if(unitInput) unitInput.value = "";
 
-            // Envoyer à Firebase en arrière-plan
             set(ref(db, 'catalog/' + newProdId), {
                 name: newProd.name,
                 unit: newProd.unit,
