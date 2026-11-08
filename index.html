@@ -42,7 +42,7 @@
                         <h1 class="font-extrabold text-lg leading-tight tracking-tight">Ingui<span class="text-teal-400">Clean</span></h1>
                         <p class="text-[11px] text-slate-400 flex items-center gap-1">
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            <span>Synchronisation Firebase Cloud</span>
+                            <span>Synchronisation Inguiclean Firebase</span>
                         </p>
                     </div>
                 </div>
@@ -260,7 +260,7 @@
         import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
-            databaseURL: "https://cleanlogixapp-default-rtdb.europe-west1.firebasedatabase.app/"
+            databaseURL: "https://inguiclean-default-rtdb.europe-west1.firebasedatabase.app/"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -302,7 +302,6 @@
                     window.catalog = Object.keys(data).map(key => ({ id: key, ...data[key] }));
                     localStorage.setItem('inguiclean_catalog', JSON.stringify(window.catalog));
                 } else {
-                    // Initialisation si la base est vide
                     INITIAL_PRODUCTS.forEach(p => {
                         set(ref(db, 'catalog/' + p.id), { name: p.name, unit: p.unit, category: p.category, icon: p.icon });
                     });
@@ -526,6 +525,7 @@
                 timestamp: Date.now()
             };
 
+            // Sauvegarde immédiate
             set(ref(db, 'orders/' + newOrderId), newOrder);
 
             const textMessage = `[Inguiclean] Nouvelle Commande\nAgent: ${agent}\nZone: ${location}\nPriorite: ${priority}\nProduits:\n${itemsSummary}\nRemarque: ${comment || 'Aucune'}`;
@@ -581,19 +581,35 @@
 
             const newAgentId = "a_" + Date.now();
             const newAgent = {
+                id: newAgentId,
                 name: nameInput.value.trim(),
                 sector: sectorInput?.value.trim() || "Général"
             };
 
-            set(ref(db, 'agents/' + newAgentId), newAgent).then(() => {
-                nameInput.value = "";
-                if(sectorInput) sectorInput.value = "";
-            }).catch(() => {
-                alert("Erreur lors de l'enregistrement de l'agent.");
+            // Mettre à jour l'état local immédiatement
+            window.agents.push(newAgent);
+            localStorage.setItem('inguiclean_agents', JSON.stringify(window.agents));
+            initAgentsSelect();
+            renderManagerManagementLists();
+
+            // Vider les champs
+            nameInput.value = "";
+            if(sectorInput) sectorInput.value = "";
+
+            // Envoyer à Firebase en arrière-plan
+            set(ref(db, 'agents/' + newAgentId), {
+                name: newAgent.name,
+                sector: newAgent.sector
+            }).catch((err) => {
+                console.error("Erreur de synchro Firebase :", err);
             });
         }
 
         window.deleteAgent = function(id) {
+            window.agents = window.agents.filter(a => a.id !== id);
+            localStorage.setItem('inguiclean_agents', JSON.stringify(window.agents));
+            initAgentsSelect();
+            renderManagerManagementLists();
             remove(ref(db, 'agents/' + id));
         }
 
@@ -606,26 +622,48 @@
             const category = catSelect ? catSelect.value : "Produits";
             const newProdId = "p_" + Date.now();
             const newProd = {
+                id: newProdId,
                 name: nameInput.value.trim(),
                 unit: unitInput?.value.trim() || "Unité",
                 category: category,
                 icon: category === 'Poubelle' ? 'ph-trash' : (category === 'EPI' ? 'ph-hand' : 'ph-package')
             };
 
-            set(ref(db, 'catalog/' + newProdId), newProd).then(() => {
-                nameInput.value = "";
-                if(unitInput) unitInput.value = "";
-            }).catch(() => {
-                alert("Erreur lors de l'enregistrement du produit.");
+            // Mettre à jour l'état local immédiatement
+            window.catalog.push(newProd);
+            localStorage.setItem('inguiclean_catalog', JSON.stringify(window.catalog));
+            renderCatalog();
+            renderManagerManagementLists();
+
+            // Vider les champs
+            nameInput.value = "";
+            if(unitInput) unitInput.value = "";
+
+            // Envoyer à Firebase en arrière-plan
+            set(ref(db, 'catalog/' + newProdId), {
+                name: newProd.name,
+                unit: newProd.unit,
+                category: newProd.category,
+                icon: newProd.icon
+            }).catch((err) => {
+                console.error("Erreur de synchro Firebase :", err);
             });
         }
 
         window.deleteProduct = function(id) {
+            window.catalog = window.catalog.filter(p => p.id !== id);
+            localStorage.setItem('inguiclean_catalog', JSON.stringify(window.catalog));
+            renderCatalog();
+            renderManagerManagementLists();
             remove(ref(db, 'catalog/' + id));
         }
 
         window.clearAllOrders = function() {
             if (!confirm("Voulez-vous supprimer toutes les commandes ?")) return;
+            window.orders = [];
+            localStorage.setItem('inguiclean_orders', JSON.stringify(window.orders));
+            renderOrdersList();
+            updateStats();
             remove(ref(db, 'orders'));
         }
 
